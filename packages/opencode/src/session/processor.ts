@@ -18,7 +18,24 @@ import { Question } from "@/question"
 
 export namespace SessionProcessor {
   const DOOM_LOOP_THRESHOLD = 3
+  const CHUNK_TIMEOUT = 3 * 60 * 1000
   const log = Log.create({ service: "session.processor" })
+
+  function createChunkTimer() {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    return {
+      promise: new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error("Chunk timeout exceeded"))
+        }, CHUNK_TIMEOUT)
+      }),
+      clear() {
+        if (!timer) return
+        clearTimeout(timer)
+        timer = undefined
+      },
+    }
+  }
 
   export type Info = Awaited<ReturnType<typeof create>>
   export type Result = Awaited<ReturnType<Info["process"]>>
@@ -50,10 +67,19 @@ export namespace SessionProcessor {
           try {
             let currentText: MessageV2.TextPart | undefined
             let reasoningMap: Record<string, MessageV2.ReasoningPart> = {}
-            const stream = await LLM.stream(streamInput)
 
-            for await (const value of stream.fullStream) {
+            const stream = await LLM.stream(streamInput)
+            const iterator = stream.fullStream[Symbol.asyncIterator]()
+
+            while (true) {
               input.abort.throwIfAborted()
+              const chunkTimer = createChunkTimer()
+              const next = await Promise.race([iterator.next(), chunkTimer.promise]).finally(() => {
+                chunkTimer.clear()
+              })
+              if (next.done) break
+              const value = next.value
+
               switch (value.type) {
                 case "start":
                   SessionStatus.set(input.sessionID, { type: "busy" })

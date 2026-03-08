@@ -1889,11 +1889,15 @@ export namespace LSPServer {
       // Validate SDK before starting
       const validation = await CangjieSDK.validate()
       if (!validation.valid) {
-        log.error("Cangjie SDK validation failed:", validation.errors.join("; "))
+        log.error("Cangjie SDK validation failed: " + validation.errors.join("; "))
         return
       }
 
-      const env = CangjieSDK.env()
+      const sdkEnv = CangjieSDK.env()
+      // Convert ProcessEnv to Record<string, string> for spawn
+      const env = Object.fromEntries(
+        Object.entries(sdkEnv).filter(([, v]) => v !== undefined)
+      ) as Record<string, string>
       log.info("Starting Cangjie LSP", { bin, root, version: validation.version })
 
       const proc = spawn(bin, [], {

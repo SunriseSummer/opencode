@@ -34,7 +34,11 @@ export const cjfmt: Info = {
     return ["cjfmt", "-f", "$FILE"]
   },
   get environment() {
-    return CangjieSDK.env()
+    // Convert ProcessEnv to Record<string, string> by filtering out undefined values
+    const env = CangjieSDK.env()
+    return Object.fromEntries(
+      Object.entries(env).filter(([, v]) => v !== undefined)
+    ) as Record<string, string>
   },
   extensions: [".cj", ".cangjie"],
   async enabled() {

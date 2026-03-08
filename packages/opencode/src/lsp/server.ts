@@ -1885,11 +1885,43 @@ export namespace LSPServer {
         log.info("LSPServer not found, please install CangjieSDK and source envsetup.sh first")
         return
       }
+
+      // Validate SDK before starting
+      const validation = await CangjieSDK.validate()
+      if (!validation.valid) {
+        log.error("Cangjie SDK validation failed:", validation.errors.join("; "))
+        return
+      }
+
+      const env = CangjieSDK.env()
+      log.info("Starting Cangjie LSP", { bin, root, version: validation.version })
+
+      const proc = spawn(bin, [], {
+        cwd: root,
+        env,
+      })
+
+      // Handle spawn errors
+      proc.on("error", (err) => {
+        log.error("Failed to start Cangjie LSPServer", { error: err.message })
+      })
+
+      // Check if process exits prematurely (usually indicates missing dependencies)
+      const earlyExit = await new Promise<number | null>((resolve) => {
+        const timeout = setTimeout(() => resolve(null), 2000)
+        proc.on("exit", (code) => {
+          clearTimeout(timeout)
+          resolve(code)
+        })
+      })
+
+      if (earlyExit !== null) {
+        log.error("LSPServer exited prematurely", { exitCode: earlyExit })
+        return
+      }
+
       return {
-        process: spawn(bin, [], {
-          cwd: root,
-          env: CangjieSDK.env(),
-        }),
+        process: proc,
       }
     },
   }

@@ -26,11 +26,20 @@ export const gofmt: Info = {
 
 export const cjfmt: Info = {
   name: "cjfmt",
-  command: [CangjieSDK.tool("cjfmt") ?? "cjfmt", "-f", "$FILE"],
-  environment: CangjieSDK.env(),
+  get command() {
+    // Use the SDK tool if available, otherwise fall back to global cjfmt
+    const sdkTool = CangjieSDK.tool("cjfmt")
+    if (sdkTool) return [sdkTool, "-f", "$FILE"]
+    // Fall back to global cjfmt (requires cjfmt in PATH)
+    return ["cjfmt", "-f", "$FILE"]
+  },
+  get environment() {
+    return CangjieSDK.env()
+  },
   extensions: [".cj", ".cangjie"],
   async enabled() {
-    return CangjieSDK.tool("cjfmt") !== null
+    // Check SDK tool first, then global tool
+    return CangjieSDK.tool("cjfmt") !== null || which("cjfmt") !== null
   },
 }
 

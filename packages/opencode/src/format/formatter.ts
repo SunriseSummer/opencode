@@ -23,18 +23,16 @@ export const gofmt: Info = {
   },
 }
 
+const cjfmtBin = () => which("cjfmt") ?? (process.platform === "win32" ? which("cjfmt.exe") : null)
+
 export const cjfmt: Info = {
   name: "cjfmt",
   get command() {
-    let bin = which("cjfmt")
-    if (!bin && process.platform === "win32") bin = which("cjfmt.exe")
-    if (!bin) bin = "cjfmt"
-    return [bin, "-f", "$FILE"]
+    return [cjfmtBin() ?? "cjfmt", "-f", "$FILE"]
   },
   extensions: [".cj", ".cangjie"],
   async enabled() {
-    if (which("cjfmt")) return true
-    return process.platform === "win32" && which("cjfmt.exe") !== null
+    return cjfmtBin() !== null
   },
 }
 

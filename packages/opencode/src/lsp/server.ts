@@ -1879,8 +1879,7 @@ export namespace LSPServer {
     extensions: [".cj", ".cangjie"],
     root: NearestRoot(["cjpm.toml"]),
     async spawn(root) {
-      let bin = which("LSPServer")
-      if (!bin && process.platform === "win32") bin = which("LSPServer.exe")
+      const bin = which("LSPServer") ?? (process.platform === "win32" ? which("LSPServer.exe") : null)
       if (!bin) {
         log.info("LSPServer not found, please install CangjieSDK first")
         return

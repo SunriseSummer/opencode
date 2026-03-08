@@ -9,11 +9,10 @@ if (!expectedBunVersion) {
   throw new Error("packageManager field not found in root package.json")
 }
 
-// relax version requirement - allow minor version differences
-const expectedBunVersionRange = `>=1.2.0`
+const expectedBunVersionRange = `^${expectedBunVersion}`
 
 if (!semver.satisfies(process.versions.bun, expectedBunVersionRange)) {
-  console.warn(`Warning: This script prefers bun@^${expectedBunVersion}, but you are using bun@${process.versions.bun}`)
+  throw new Error(`This script requires bun@${expectedBunVersionRange}, but you are using bun@${process.versions.bun}`)
 }
 
 const env = {

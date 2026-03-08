@@ -1876,7 +1876,7 @@ export namespace LSPServer {
 
   export const Cangjie: Info = {
     id: "cangjie",
-    extensions: [".cj", ".cangjie"],
+    extensions: [".cj"],
     root: NearestRoot(["cjpm.toml"]),
     async spawn(root) {
       const bin = which("LSPServer") ?? (process.platform === "win32" ? which("LSPServer.exe") : null)
@@ -1884,28 +1884,12 @@ export namespace LSPServer {
         log.info("LSPServer not found, please install CangjieSDK first")
         return
       }
-
       const proc = spawn(bin, [], {
         cwd: root,
       })
-
       proc.on("error", (err) => {
         log.error("Failed to start Cangjie LSPServer", { error: err.message })
       })
-
-      const earlyExit = await new Promise<number | null>((resolve) => {
-        const timeout = setTimeout(() => resolve(null), 2000)
-        proc.on("exit", (code) => {
-          clearTimeout(timeout)
-          resolve(code)
-        })
-      })
-
-      if (earlyExit !== null) {
-        log.error("LSPServer exited prematurely", { exitCode: earlyExit })
-        return
-      }
-
       return {
         process: proc,
       }

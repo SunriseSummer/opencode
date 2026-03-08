@@ -13,7 +13,6 @@ import { Flag } from "../flag/flag"
 import { Archive } from "../util/archive"
 import { Process } from "../util/process"
 import { which } from "../util/which"
-import { CangjieSDK } from "../cangjie/sdk"
 
 export namespace LSPServer {
   const log = Log.create({ service: "lsp.server" })
@@ -1877,53 +1876,20 @@ export namespace LSPServer {
 
   export const Cangjie: Info = {
     id: "cangjie",
-    extensions: [".cj", ".cangjie"],
+    extensions: [".cj"],
     root: NearestRoot(["cjpm.toml"]),
     async spawn(root) {
-      const bin = CangjieSDK.tool("LSPServer")
+      const bin = which("LSPServer") ?? (process.platform === "win32" ? which("LSPServer.exe") : null)
       if (!bin) {
-        log.info("LSPServer not found, please install CangjieSDK and source envsetup.sh first")
+        log.info("LSPServer not found, please install CangjieSDK first")
         return
       }
-
-      // Validate SDK before starting
-      const validation = await CangjieSDK.validate()
-      if (!validation.valid) {
-        log.error("Cangjie SDK validation failed: " + validation.errors.join("; "))
-        return
-      }
-
-      const sdkEnv = CangjieSDK.env()
-      // Convert ProcessEnv to Record<string, string> for spawn
-      const env = Object.fromEntries(
-        Object.entries(sdkEnv).filter(([, v]) => v !== undefined)
-      ) as Record<string, string>
-      log.info("Starting Cangjie LSP", { bin, root, version: validation.version })
-
       const proc = spawn(bin, [], {
         cwd: root,
-        env,
       })
-
-      // Handle spawn errors
       proc.on("error", (err) => {
         log.error("Failed to start Cangjie LSPServer", { error: err.message })
       })
-
-      // Check if process exits prematurely (usually indicates missing dependencies)
-      const earlyExit = await new Promise<number | null>((resolve) => {
-        const timeout = setTimeout(() => resolve(null), 2000)
-        proc.on("exit", (code) => {
-          clearTimeout(timeout)
-          resolve(code)
-        })
-      })
-
-      if (earlyExit !== null) {
-        log.error("LSPServer exited prematurely", { exitCode: earlyExit })
-        return
-      }
-
       return {
         process: proc,
       }

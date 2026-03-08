@@ -5,7 +5,6 @@ import { Filesystem } from "../util/filesystem"
 import { Process } from "../util/process"
 import { which } from "../util/which"
 import { Flag } from "@/flag/flag"
-import { CangjieSDK } from "../cangjie/sdk"
 
 export interface Info {
   name: string
@@ -27,23 +26,12 @@ export const gofmt: Info = {
 export const cjfmt: Info = {
   name: "cjfmt",
   get command() {
-    // Use the SDK tool if available, otherwise fall back to global cjfmt
-    const sdkTool = CangjieSDK.tool("cjfmt")
-    if (sdkTool) return [sdkTool, "-f", "$FILE"]
-    // Fall back to global cjfmt (requires cjfmt in PATH)
     return ["cjfmt", "-f", "$FILE"]
   },
-  get environment() {
-    // Convert ProcessEnv to Record<string, string> by filtering out undefined values
-    const env = CangjieSDK.env()
-    return Object.fromEntries(
-      Object.entries(env).filter(([, v]) => v !== undefined)
-    ) as Record<string, string>
-  },
-  extensions: [".cj", ".cangjie"],
+  extensions: [".cj"],
   async enabled() {
-    // Check SDK tool first, then global tool
-    return CangjieSDK.tool("cjfmt") !== null || which("cjfmt") !== null
+    const bin = which("cjfmt") ?? (process.platform === "win32" ? which("cjfmt.exe") : null)
+    return bin !== null
   },
 }
 

@@ -253,6 +253,38 @@ timeout 0.2s LSPServer --test
 
 这足以说明本次内建 LSP 集成的关键依赖路径是正确的。
 
+---
+
+### 任务 7：构建并内置 tree-sitter-cangjie.wasm
+
+#### 操作
+
+- 使用发布页提供的 `cangjie-tree-sitter-1.0.5.zip`
+- 在源码目录执行：
+
+```bash
+npm install --ignore-scripts
+node node_modules/tree-sitter-cli/install.js
+npx tree-sitter build --wasm
+```
+
+- 将生成产物接入：
+  - `packages/opencode/tree-sitter/cangjie/tree-sitter-cangjie.wasm`
+  - `packages/opencode/tree-sitter/cangjie/highlights.scm`
+  - `packages/opencode/parsers-config.ts`
+
+#### 结果
+
+- `tree-sitter-cangjie.wasm` 构建成功
+- 产物大小约 `899386` 字节
+- OpenCode parser 配置已注册 `filetype: "cangjie"`
+
+#### 结论
+
+**通过**
+
+这说明仓颉 tree-sitter 集成已经不再停留在方案层，而是已经具备仓库内可消费的实际 parser 资产。
+
 ## 汇总评分
 
 | 维度 | 评价 | 结论 |
@@ -260,7 +292,7 @@ timeout 0.2s LSPServer --test
 | 仓颉项目识别 | 优 | `cjpm.toml` + `.cj` 已接通 |
 | 工具链自动接入 | 优 | `LSPServer` / `cjfmt` / `cjpm` 均可用 |
 | 中小任务闭环 | 优 | init / build / run / format 均通过 |
-| AI 语义支撑 | 良优 | 已具备 LSP，tree-sitter 仍可继续增强 |
+| AI 语义支撑 | 优 | 已具备 LSP，且已内置 tree-sitter wasm 高亮资产 |
 | 模型知识增强 | 优 | 可直接利用 `cangjie-skills` 与 `cangjie-docs` |
 
 ## 对 AI 开发效率的实际意义
@@ -298,12 +330,12 @@ timeout 0.2s LSPServer --test
 
 ## 当前不足
 
-1. **未把 tree-sitter wasm 直接接入 OpenCode parser 管线**
-   - 当前发布页提供的是源码，不是现成 wasm 资产
-   - 后续建议补上 parser 资产发布或构建链打包
-
-2. **未在本沙箱中完成 OpenCode 全量 Bun 测试**
+1. **未在本沙箱中完成 OpenCode 全量 Bun 测试**
    - 原因是沙箱缺少 Bun
+
+2. **tree-sitter 当前先内置了 wasm + highlights**
+   - 尚未补充更多 query 资产（如 injections 等）
+   - 也还没有把重新生成 wasm 的流程接入仓库正式构建链
 
 3. **未使用外部模型 API 做自动化对照实验**
    - 本报告更偏“工具链与工程可用性测评”
@@ -317,6 +349,5 @@ timeout 0.2s LSPServer --test
 - 能识别仓颉项目
 - 能直接接通官方 LSP
 - 能直接接通官方 formatter
+- 能通过内置 `tree-sitter-cangjie.wasm` 提供仓颉语法高亮
 - 能通过 skills/docs 显著补齐模型对仓颉知识的缺口
-
-如果后续再补上 `tree-sitter-cangjie.wasm` 的稳定接入，那么这个定制版 OpenCode 对仓颉的支持会从“高可用”进一步提升到“近完整语言一级支持”。

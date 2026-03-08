@@ -1,9 +1,19 @@
+import wasm from "./tree-sitter/cangjie/tree-sitter-cangjie.wasm" with { type: "file" }
+import highlights from "./tree-sitter/cangjie/highlights.scm" with { type: "file" }
+
 export default {
   // NOTE: FOR markdown, javascript and typescript, we use the opentui built-in parsers
   // Warn: when taking queries from the nvim-treesitter repo, make sure to include the query dependencies as well
   //       marked with for example `; inherits: ecma` at the top of the file. Just put the dependencies before the actual query.
   //       ALSO: Some queries use breaking changes in the nvim-treesitter repo, that are not compatible with the (web-)tree-sitter parser.
   parsers: [
+    {
+      filetype: "cangjie",
+      wasm,
+      queries: {
+        highlights: [highlights],
+      },
+    },
     {
       filetype: "python",
       wasm: "https://github.com/tree-sitter/tree-sitter-python/releases/download/v0.23.6/tree-sitter-python.wasm",

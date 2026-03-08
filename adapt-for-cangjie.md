@@ -55,7 +55,7 @@
      - `cjfmt` 工具发现
      - 运行时环境拼装
 
-## 为什么优先集成 LSP，而不是先强塞 tree-sitter
+## 为什么这次以 LSP 为主，同时补上 tree-sitter wasm
 
 `CangjieSDK 1.0.5` 发布页同时提供了：
 
@@ -65,9 +65,9 @@
 - `cangjie-skills`
 - `cangjie-docs`
 
-结合 OpenCode 当前架构，**最优先且最稳的路径**是：
+结合 OpenCode 当前架构，**最优先且最稳的路径**是先把 SDK 成品工具链接通，再把 tree-sitter 源码包构建成 OpenCode 可直接消费的本地资产。
 
-### 第一阶段（本次已落地）
+### 第一部分（本次已落地）
 
 直接集成 SDK 自带的 LSP 和 formatter。
 
@@ -82,19 +82,25 @@
 - 对 AI agent 来说，这比只做语法高亮更能节省 Token
 - `cjfmt` 能减少 agent 手工整理格式的成本
 
-### 第二阶段（建议后续增强）
+### 第二部分（本次已落地）
 
-把 `tree-sitter-cangjie` 产出成稳定的 `wasm + queries` 资源，再接入 `parsers-config.ts`。
+把 `tree-sitter-cangjie` 源码包构建成稳定的 `wasm + queries` 本地资产，并直接接入 `packages/opencode/parsers-config.ts`。
 
-原因：
+本次采用的方式是：
 
-- 当前 OpenCode 的 parser 配置更适合消费**可直接访问的 wasm 与 query 资源**
-- 发布页提供的是 tree-sitter **源码包**，不是现成 wasm 发布资源
-- 直接内建 tree-sitter 最好采用以下两种方式之一：
-  1. 单独发布 `tree-sitter-cangjie.wasm` 与 queries
-  2. 在 OpenCode 构建链中增加本地 parser 资产打包
+- 从你提供的源码包构建 `tree-sitter-cangjie.wasm`
+- 选用 `queries/highlights.scm`
+- 将产物内置到仓库：
+  - `packages/opencode/tree-sitter/cangjie/tree-sitter-cangjie.wasm`
+  - `packages/opencode/tree-sitter/cangjie/highlights.scm`
+- 通过 OpenTUI 支持的本地文件资产导入方式接入
 
-这一步并不是不能做，而是相较 LSP 接入，收益/风险比没有第一阶段高。
+这样做的好处是：
+
+- 不依赖外部网络拉取 parser 资产
+- 可以离线使用
+- 能直接给 TUI 代码块和文件渲染提供仓颉语法高亮
+- 与已经接入的 LSP 形成“语义分析 + 语法高亮”的互补
 
 ## 为什么这套方案能显著优化“模型不懂仓颉”的问题
 
@@ -287,7 +293,7 @@ my-cangjie-project/
 }
 ```
 
-## tree-sitter 的建议接入方式
+## tree-sitter 集成说明
 
 `tree-sitter-cangjie` 源码已经具备：
 
@@ -301,20 +307,28 @@ my-cangjie-project/
 - `cj`
 - `cangjie`
 
-建议后续按下面方式接入：
+本次实际接入步骤如下：
 
 1. 从源码包构建 `tree-sitter-cangjie.wasm`
 2. 固化 `queries/highlights.scm`
-3. 将 wasm 与 query 以稳定 URL 或构建资产方式提供
-4. 再补充到 `packages/opencode/parsers-config.ts`
+3. 将 wasm 与 query 以内置资产方式放入仓库
+4. 在 `packages/opencode/parsers-config.ts` 中通过本地 file import 注册 `filetype: "cangjie"`
 
-这一步完成后，OpenCode 对仓颉的支持将从“语义分析 + 格式化 + 知识增强”进一步升级到“语法高亮 / 增量解析 / 更细粒度结构感知”。
+构建时我采用了源码包自带的 tree-sitter CLI 路线，但为了绕过当前 Node 24 环境下 `tree-sitter` 原生绑定编译问题，使用了：
+
+```bash
+npm install --ignore-scripts
+node node_modules/tree-sitter-cli/install.js
+npx tree-sitter build --wasm
+```
+
+完成这一步后，OpenCode 对仓颉的支持已经从“语义分析 + 格式化 + 知识增强”升级到“语义分析 + 格式化 + 语法高亮 + 知识增强”。
 
 ## 已知限制
 
-1. 本次没有把 tree-sitter wasm 直接内建进仓库构建链
+1. 本次已内置 tree-sitter wasm 资产，但还没有把“从源码重新生成这些资产”的步骤接进 OpenCode 自身构建脚本
 2. 本沙箱里未预装 Bun，因此无法在本地完整跑 OpenCode 的 Bun 测试/构建命令
-3. 但仓颉 SDK 本体已经通过手工 smoke test 验证
+3. 但仓颉 SDK 与 tree-sitter 资产都已经通过手工 smoke test 验证
 
 ## 总结
 
@@ -322,6 +336,7 @@ my-cangjie-project/
 
 - **零额外配置接入仓颉 LSP**
 - **零额外配置接入 cjfmt**
+- **内置 `tree-sitter-cangjie.wasm` 提供仓颉语法高亮**
 - **零门槛利用 CangjieSDK 提供的 skills/docs 进行知识增强**
 
 对一个“模型原生知识相对不足”的新语言来说，这比单纯做语法着色更实用，也更符合 AI coding agent 的实际收益。

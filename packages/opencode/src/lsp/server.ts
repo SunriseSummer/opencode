@@ -13,6 +13,7 @@ import { Flag } from "../flag/flag"
 import { Archive } from "../util/archive"
 import { Process } from "../util/process"
 import { which } from "../util/which"
+import { CangjieSDK } from "../cangjie/sdk"
 
 export namespace LSPServer {
   const log = Log.create({ service: "lsp.server" })
@@ -1869,6 +1870,25 @@ export namespace LSPServer {
       return {
         process: spawn(gleam, ["lsp"], {
           cwd: root,
+        }),
+      }
+    },
+  }
+
+  export const Cangjie: Info = {
+    id: "cangjie",
+    extensions: [".cj", ".cangjie"],
+    root: NearestRoot(["cjpm.toml"]),
+    async spawn(root) {
+      const bin = CangjieSDK.tool("LSPServer")
+      if (!bin) {
+        log.info("LSPServer not found, please install CangjieSDK and source envsetup.sh first")
+        return
+      }
+      return {
+        process: spawn(bin, [], {
+          cwd: root,
+          env: CangjieSDK.env(),
         }),
       }
     },

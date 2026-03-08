@@ -243,6 +243,8 @@ export namespace File {
     "ini",
     "cfg",
     "conf",
+    "cj",
+    "cangjie",
     "env",
   ])
 

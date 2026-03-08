@@ -5,6 +5,7 @@ import { Filesystem } from "../util/filesystem"
 import { Process } from "../util/process"
 import { which } from "../util/which"
 import { Flag } from "@/flag/flag"
+import { CangjieSDK } from "../cangjie/sdk"
 
 export interface Info {
   name: string
@@ -20,6 +21,16 @@ export const gofmt: Info = {
   extensions: [".go"],
   async enabled() {
     return which("gofmt") !== null
+  },
+}
+
+export const cjfmt: Info = {
+  name: "cjfmt",
+  command: [CangjieSDK.tool("cjfmt") ?? "cjfmt", "-f", "$FILE"],
+  environment: CangjieSDK.env(),
+  extensions: [".cj", ".cangjie"],
+  async enabled() {
+    return CangjieSDK.tool("cjfmt") !== null
   },
 }
 

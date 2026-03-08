@@ -1882,7 +1882,7 @@ export namespace LSPServer {
     async spawn(root) {
       const bin = CangjieSDK.tool("LSPServer")
       if (!bin) {
-        log.info("LSPServer not found, please install CangjieSDK and source envsetup.sh first")
+        log.info("LSPServer not found in PATH")
         return
       }
 

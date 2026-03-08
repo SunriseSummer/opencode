@@ -1,88 +1,50 @@
-import os from "os"
-import path from "path"
+import { Process } from "../util/process"
 import { which } from "../util/which"
 
 export namespace CangjieSDK {
   /** Minimum supported Cangjie SDK version */
-  export const MIN_VERSION = "1.0.5"
+  export const MIN_VERSION = "1.0.0"
 
-  const root = (bin: string) => {
-    const dir = path.dirname(path.normalize(bin))
-    if (dir.endsWith(path.join("tools", "bin"))) return path.dirname(path.dirname(dir))
-    if (dir.endsWith("bin")) return path.dirname(dir)
-  }
-
-  const concat = (...list: (string | undefined)[]) => list.filter(Boolean).join(path.delimiter)
-
-  export function arch(input = os.arch()) {
-    if (input === "x64") return "x86_64"
-    if (input === "arm64") return "aarch64"
-    return input
+  const ok = (v: string) => {
+    const parts = v.split(".").map(Number)
+    const min = MIN_VERSION.split(".").map(Number)
+    for (let i = 0; i < Math.max(parts.length, min.length); i++) {
+      const a = parts[i] ?? 0
+      const b = min[i] ?? 0
+      if (a > b) return true
+      if (a < b) return false
+    }
+    return true
   }
 
   export function home(env: NodeJS.ProcessEnv = process.env) {
-    if (env.CANGJIE_HOME) return env.CANGJIE_HOME
-
-    for (const name of ["LSPServer", "cjfmt", "cjpm"]) {
-      const bin = which(name, env)
-      if (bin) return root(bin)
-    }
+    return env.CANGJIE_HOME ?? null
   }
 
   export function env(input: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-    const root = home(input)
-    if (!root) return input
-
-    const PATH = concat(
-      path.join(root, "bin"),
-      path.join(root, "tools", "bin"),
-      input.PATH ?? input.Path,
-      input.HOME ? path.join(input.HOME, ".cjpm", "bin") : undefined,
-    )
-
-    if (process.platform === "win32") {
-      return {
-        ...input,
-        CANGJIE_HOME: root,
-        PATH,
-      }
-    }
-
-    const key = process.platform === "darwin" ? "DYLD_LIBRARY_PATH" : "LD_LIBRARY_PATH"
-    const lib = concat(
-      path.join(root, "runtime", "lib", `${process.platform === "darwin" ? "darwin" : "linux"}_${arch()}_cjnative`),
-      path.join(root, "tools", "lib"),
-      input[key],
-    )
-
-    return {
-      ...input,
-      CANGJIE_HOME: root,
-      PATH,
-      [key]: lib,
-    }
+    return input
   }
 
   export function tool(name: string, input: NodeJS.ProcessEnv = process.env) {
-    return which(name, env(input))
+    const bin = which(name, input)
+    if (bin) return bin
+    if (process.platform !== "win32") return null
+    return which(`${name}.exe`, input)
   }
 
   /**
    * Get the version of the installed Cangjie SDK
-   * @returns The version string (e.g., "1.0.5") or null if not found
+   * @returns The version string (e.g., "1.0.0") or null if not found
    */
   export async function version(env: NodeJS.ProcessEnv = process.env): Promise<string | null> {
-    const cjpm = tool("cjpm", env)
-    if (!cjpm) return null
+    const cjc = tool("cjc", env)
+    if (!cjc) return null
 
-    try {
-      const { $: $exec } = await import("bun")
-      const output = await $exec`${cjpm} --version`.text().catch(() => "")
-      const match = output.match(/(\d+\.\d+\.\d+)/)
-      return match?.[1] ?? null
-    } catch {
-      return null
-    }
+    const out = await Process.run([cjc, "-v"], { env, nothrow: true }).catch(() => null)
+    if (!out) return null
+    const text = Buffer.concat([out.stdout, out.stderr]).toString()
+    const match = text.match(/(\d+\.\d+\.\d+)/)
+    return match?.[1] ?? null
   }
 
   /**
@@ -90,19 +52,7 @@ export namespace CangjieSDK {
    */
   export async function checkVersion(env: NodeJS.ProcessEnv = process.env): Promise<boolean> {
     const v = await version(env)
-    if (!v) return false
-
-    // Simple version comparison (assumes semver format)
-    const parts = v.split(".").map(Number)
-    const minParts = MIN_VERSION.split(".").map(Number)
-
-    for (let i = 0; i < Math.max(parts.length, minParts.length); i++) {
-      const part = parts[i] ?? 0
-      const minPart = minParts[i] ?? 0
-      if (part > minPart) return true
-      if (part < minPart) return false
-    }
-    return true
+    return v ? ok(v) : false
   }
 
   /**
@@ -113,37 +63,28 @@ export namespace CangjieSDK {
     valid: boolean
     home: string | null
     version: string | null
-    tools: { cjpm: boolean; cjfmt: boolean; lsp: boolean }
+    tools: { cjfmt: boolean; lsp: boolean }
     errors: string[]
   }> {
     const errors: string[] = []
-    const sdkHome = home(env)
-    const tools = { cjpm: false, cjfmt: false, lsp: false }
-
-    if (!sdkHome) {
-      errors.push("Cangjie SDK not found. Please install CangjieSDK and set CANGJIE_HOME or add tools to PATH.")
-      return { valid: false, home: null, version: null, tools, errors }
+    const tools = {
+      cjfmt: tool("cjfmt", env) !== null,
+      lsp: tool("LSPServer", env) !== null,
     }
 
-    // Check for required tools
-    tools.cjpm = tool("cjpm", env) !== null
-    tools.cjfmt = tool("cjfmt", env) !== null
-    tools.lsp = tool("LSPServer", env) !== null
-
-    if (!tools.cjpm) errors.push("cjpm not found in SDK")
-    if (!tools.cjfmt) errors.push("cjfmt not found in SDK")
-    if (!tools.lsp) errors.push("LSPServer not found in SDK")
+    if (!tools.lsp) errors.push("LSPServer not found in PATH")
 
     // Check version
     const v = await version(env)
-    const versionOk = v ? await checkVersion(env) : false
+    const versionOk = v ? ok(v) : false
+    if (!v) errors.push("Unable to read Cangjie version from cjc -v")
     if (v && !versionOk) {
-      errors.push(`Cangjie SDK version ${v} is below minimum required version ${MIN_VERSION}`)
+      errors.push(`Cangjie version ${v} is below minimum required version ${MIN_VERSION}`)
     }
 
     return {
-      valid: tools.cjpm && tools.cjfmt && tools.lsp && versionOk,
-      home: sdkHome,
+      valid: tools.lsp && versionOk,
+      home: home(env),
       version: v,
       tools,
       errors,

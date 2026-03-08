@@ -39,7 +39,7 @@ export const cjfmt: Info = {
   },
   extensions: [".cj", ".cangjie"],
   async enabled() {
-    return CangjieSDK.tool("cjfmt") !== null
+    return CangjieSDK.tool("cjfmt") !== null || which("cjfmt") !== null
   },
 }
 

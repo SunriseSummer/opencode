@@ -5,12 +5,12 @@ export namespace CangjieSDK {
   /** Minimum supported Cangjie SDK version */
   export const MIN_VERSION = "1.0.0"
 
-  const ok = (v: string) => {
-    const parts = v.split(".").map(Number)
-    const min = MIN_VERSION.split(".").map(Number)
-    for (let i = 0; i < Math.max(parts.length, min.length); i++) {
-      const a = parts[i] ?? 0
-      const b = min[i] ?? 0
+  const satisfies = (v: string) => {
+    const curr = v.split(".").map(Number)
+    const need = MIN_VERSION.split(".").map(Number)
+    for (let i = 0; i < Math.max(curr.length, need.length); i++) {
+      const a = curr[i] ?? 0
+      const b = need[i] ?? 0
       if (a > b) return true
       if (a < b) return false
     }
@@ -52,7 +52,7 @@ export namespace CangjieSDK {
    */
   export async function checkVersion(env: NodeJS.ProcessEnv = process.env): Promise<boolean> {
     const v = await version(env)
-    return v ? ok(v) : false
+    return !!v && satisfies(v)
   }
 
   /**
@@ -76,14 +76,14 @@ export namespace CangjieSDK {
 
     // Check version
     const v = await version(env)
-    const versionOk = v ? ok(v) : false
+    const valid = !!v && satisfies(v)
     if (!v) errors.push("Unable to read Cangjie version from cjc -v")
-    if (v && !versionOk) {
+    if (v && !valid) {
       errors.push(`Cangjie version ${v} is below minimum required version ${MIN_VERSION}`)
     }
 
     return {
-      valid: tools.lsp && versionOk,
+      valid: tools.lsp && valid,
       home: home(env),
       version: v,
       tools,

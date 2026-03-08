@@ -3,13 +3,13 @@ import path from "path"
 import { which } from "../util/which"
 
 export namespace CangjieSDK {
-  const pick = (bin: string) => {
+  const root = (bin: string) => {
     const dir = path.dirname(path.normalize(bin))
     if (dir.endsWith(path.join("tools", "bin"))) return path.dirname(path.dirname(dir))
     if (dir.endsWith("bin")) return path.dirname(dir)
   }
 
-  const join = (...list: (string | undefined)[]) => list.filter(Boolean).join(path.delimiter)
+  const concat = (...list: (string | undefined)[]) => list.filter(Boolean).join(path.delimiter)
 
   export function arch(input = os.arch()) {
     if (input === "x64") return "x86_64"
@@ -22,7 +22,7 @@ export namespace CangjieSDK {
 
     for (const name of ["LSPServer", "cjfmt", "cjpm"]) {
       const bin = which(name, env)
-      if (bin) return pick(bin)
+      if (bin) return root(bin)
     }
   }
 
@@ -30,7 +30,7 @@ export namespace CangjieSDK {
     const root = home(input)
     if (!root) return input
 
-    const PATH = join(
+    const PATH = concat(
       path.join(root, "bin"),
       path.join(root, "tools", "bin"),
       input.PATH ?? input.Path,
@@ -46,7 +46,7 @@ export namespace CangjieSDK {
     }
 
     const key = process.platform === "darwin" ? "DYLD_LIBRARY_PATH" : "LD_LIBRARY_PATH"
-    const lib = join(
+    const lib = concat(
       path.join(root, "runtime", "lib", `${process.platform === "darwin" ? "darwin" : "linux"}_${arch()}_cjnative`),
       path.join(root, "tools", "lib"),
       input[key],

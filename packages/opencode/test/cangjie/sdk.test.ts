@@ -5,7 +5,7 @@ import { CangjieSDK } from "../../src/cangjie/sdk"
 import { LANGUAGE_EXTENSIONS } from "../../src/lsp/language"
 import { tmpdir } from "../fixture/fixture"
 
-async function cmd(dir: string, name: string) {
+async function bin(dir: string, name: string) {
   const ext = process.platform === "win32" ? ".cmd" : ""
   const file = path.join(dir, name + ext)
   const body = process.platform === "win32" ? "@echo off\r\n" : "#!/bin/sh\n"
@@ -14,7 +14,7 @@ async function cmd(dir: string, name: string) {
   return file
 }
 
-function same(a: string | null | undefined, b: string) {
+function match(a: string | null | undefined, b: string) {
   if (process.platform === "win32") {
     expect(a?.toLowerCase()).toBe(b.toLowerCase())
     return
@@ -41,7 +41,7 @@ describe("cangjie sdk", () => {
     const root = path.join(tmp.path, "cangjie")
     const dir = path.join(root, "tools", "bin")
     await fs.mkdir(dir, { recursive: true })
-    await cmd(dir, "LSPServer")
+    await bin(dir, "LSPServer")
 
     expect(CangjieSDK.home({ PATH: dir, PATHEXT: process.env["PATHEXT"] })).toBe(root)
   })
@@ -51,9 +51,9 @@ describe("cangjie sdk", () => {
     const root = path.join(tmp.path, "cangjie")
     const dir = path.join(root, "tools", "bin")
     await fs.mkdir(dir, { recursive: true })
-    const file = await cmd(dir, "cjfmt")
+    const file = await bin(dir, "cjfmt")
 
-    same(CangjieSDK.tool("cjfmt", { CANGJIE_HOME: root, PATH: "", HOME: tmp.path, PATHEXT: process.env["PATHEXT"] }), file)
+    match(CangjieSDK.tool("cjfmt", { CANGJIE_HOME: root, PATH: "", HOME: tmp.path, PATHEXT: process.env["PATHEXT"] }), file)
   })
 
   test("builds sdk runtime env", async () => {

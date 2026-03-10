@@ -5,7 +5,6 @@ import { batch, onCleanup, onMount } from "solid-js"
 
 export type EventSource = {
   on: (handler: (event: Event) => void) => () => void
-  setWorkspace?: (workspaceID?: string) => void
 }
 
 export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
@@ -18,21 +17,13 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
     events?: EventSource
   }) => {
     const abort = new AbortController()
-    let workspaceID: string | undefined
-    let sse: AbortController | undefined
-
-    function createSDK() {
-      return createOpencodeClient({
-        baseUrl: props.url,
-        signal: abort.signal,
-        directory: props.directory,
-        fetch: props.fetch,
-        headers: props.headers,
-        experimental_workspaceID: workspaceID,
-      })
-    }
-
-    let sdk = createSDK()
+    const sdk = createOpencodeClient({
+      baseUrl: props.url,
+      signal: abort.signal,
+      directory: props.directory,
+      fetch: props.fetch,
+      headers: props.headers,
+    })
 
     const emitter = createGlobalEmitter<{
       [key in Event["type"]]: Extract<Event, { type: key }>
@@ -70,56 +61,41 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
       flush()
     }
 
-    function startSSE() {
-      sse?.abort()
-      const ctrl = new AbortController()
-      sse = ctrl
-      ;(async () => {
-        while (true) {
-          if (abort.signal.aborted || ctrl.signal.aborted) break
-          const events = await sdk.event.subscribe({}, { signal: ctrl.signal })
-
-          for await (const event of events.stream) {
-            if (ctrl.signal.aborted) break
-            handleEvent(event)
-          }
-
-          if (timer) clearTimeout(timer)
-          if (queue.length > 0) flush()
-        }
-      })().catch(() => {})
-    }
-
-    onMount(() => {
+    onMount(async () => {
+      // If an event source is provided, use it instead of SSE
       if (props.events) {
         const unsub = props.events.on(handleEvent)
         onCleanup(unsub)
-      } else {
-        startSSE()
+        return
+      }
+
+      // Fall back to SSE
+      while (true) {
+        if (abort.signal.aborted) break
+        const events = await sdk.event.subscribe(
+          {},
+          {
+            signal: abort.signal,
+          },
+        )
+
+        for await (const event of events.stream) {
+          handleEvent(event)
+        }
+
+        // Flush any remaining events
+        if (timer) clearTimeout(timer)
+        if (queue.length > 0) {
+          flush()
+        }
       }
     })
 
     onCleanup(() => {
       abort.abort()
-      sse?.abort()
       if (timer) clearTimeout(timer)
     })
 
-    return {
-      get client() {
-        return sdk
-      },
-      directory: props.directory,
-      event: emitter,
-      fetch: props.fetch ?? fetch,
-      setWorkspace(next?: string) {
-        if (workspaceID === next) return
-        workspaceID = next
-        sdk = createSDK()
-        props.events?.setWorkspace?.(next)
-        if (!props.events) startSSE()
-      },
-      url: props.url,
-    }
+    return { client: sdk, event: emitter, url: props.url }
   },
 })

@@ -1,6 +1,3 @@
-import wasm from "./tree-sitter/cangjie/tree-sitter-cangjie.wasm" with { type: "file" }
-import highlights from "./tree-sitter/cangjie/highlights.scm" with { type: "file" }
-
 export default {
   // NOTE: FOR markdown, javascript and typescript, we use the opentui built-in parsers
   // Warn: when taking queries from the nvim-treesitter repo, make sure to include the query dependencies as well
@@ -9,9 +6,14 @@ export default {
   parsers: [
     {
       filetype: "cangjie",
-      wasm,
+      wasm: "https://github.com/SunriseSummer/CangjieTreeSitter/releases/download/1.0.5.2/tree-sitter-cangjie.wasm",
       queries: {
-        highlights: [highlights],
+        highlights: [
+          "https://github.com/SunriseSummer/CangjieTreeSitter/releases/download/1.0.5.2/highlights.scm"
+        ],
+        locals: [
+          "https://github.com/SunriseSummer/CangjieTreeSitter/releases/download/1.0.5.2/locals.scm"
+        ],
       },
     },
     {

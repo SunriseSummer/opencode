@@ -10,7 +10,6 @@ export const LANGUAGE_EXTENSIONS: Record<string, string> = {
   ".coffee": "coffeescript",
   ".c": "c",
   ".cj": "cangjie",
-  ".cangjie": "cangjie",
   ".cpp": "cpp",
   ".cxx": "cpp",
   ".cc": "cpp",

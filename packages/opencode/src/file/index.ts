@@ -244,7 +244,6 @@ export namespace File {
     "cfg",
     "conf",
     "cj",
-    "cangjie",
     "env",
   ])
 

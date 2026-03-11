@@ -1,16 +1,15 @@
 import { describe, expect, test, beforeEach } from "bun:test"
 import path from "path"
+import { spawn } from "child_process"
 import { LSPClient } from "../../src/lsp/client"
 import { LSPServer } from "../../src/lsp/server"
 import { Instance } from "../../src/project/instance"
 import { Log } from "../../src/util/log"
 
-// Fake LSP server that records args it was started with
-function spawnFakeServer() {
-  const { spawn } = require("child_process")
-  const serverPath = path.join(__dirname, "../fixture/lsp/fake-lsp-server.js")
+function spawnFakeServer(...args: string[]) {
+  const serverPath = path.join(__dirname, "../fixture/lsp/fake-lsp-server-with-args.js")
   return {
-    process: spawn(process.execPath, [serverPath], {
+    process: spawn(process.execPath, [serverPath, ...args], {
       stdio: "pipe",
     }),
   }
@@ -21,14 +20,14 @@ describe("Cangjie LSP server", () => {
     await Log.init({ print: true })
   })
 
-  test("spawn config includes --stdio argument", () => {
+  test("config has correct id and extensions", () => {
     const info = LSPServer.Cangjie
     expect(info.id).toBe("cangjie")
     expect(info.extensions).toEqual([".cj"])
   })
 
-  test("initializes and communicates over stdio", async () => {
-    const handle = spawnFakeServer() as any
+  test("initializes over stdio with --stdio argument", async () => {
+    const handle = spawnFakeServer("--stdio")
 
     const client = await Instance.provide({
       directory: process.cwd(),

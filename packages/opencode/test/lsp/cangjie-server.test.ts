@@ -26,7 +26,7 @@ describe("Cangjie LSP server", () => {
     expect(info.extensions).toEqual([".cj"])
   })
 
-  test("initializes over stdio with --stdio argument", async () => {
+  test("initializes over stdio", async () => {
     const handle = spawnFakeServer("--stdio")
 
     const client = await Instance.provide({

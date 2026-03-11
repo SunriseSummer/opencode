@@ -1881,10 +1881,10 @@ export namespace LSPServer {
     async spawn(root) {
       const bin = which("LSPServer") ?? (process.platform === "win32" ? which("LSPServer.exe") : null)
       if (!bin) {
-        log.info("LSPServer not found, please install CangjieSDK first")
+        log.info("LSPServer not found, please install Cangjie SDK and source envsetup.sh first")
         return
       }
-      const proc = spawn(bin, [], {
+      const proc = spawn(bin, ["--stdio"], {
         cwd: root,
       })
       proc.on("error", (err) => {

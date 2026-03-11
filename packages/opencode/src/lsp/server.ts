@@ -1884,7 +1884,7 @@ export namespace LSPServer {
         log.info("LSPServer not found, please install CangjieSDK first")
         return
       }
-      const proc = spawn(bin, [], {
+      const proc = spawn(bin, ["--stdio"], {
         cwd: root,
       })
       proc.on("error", (err) => {

@@ -1874,89 +1874,18 @@ export namespace LSPServer {
     },
   }
 
-  function cangjieEnv(sdkHome: string) {
-    const arch = process.arch === "x64" ? "x86_64" : process.arch
-    return {
-      ...process.env,
-      CANGJIE_HOME: sdkHome,
-      LD_LIBRARY_PATH: [
-        path.join(sdkHome, "tools", "lib"),
-        path.join(sdkHome, "runtime", "lib", `linux_${arch}_cjnative`),
-        process.env["LD_LIBRARY_PATH"],
-      ]
-        .filter(Boolean)
-        .join(path.delimiter),
-    }
-  }
-
-  function cangjieSdkHome(bin: string) {
-    // LSPServer lives at <sdk>/tools/bin/LSPServer
-    return path.resolve(path.dirname(bin), "..", "..")
-  }
-
   export const Cangjie: Info = {
     id: "cangjie",
     extensions: [".cj"],
     root: NearestRoot(["cjpm.toml"]),
     async spawn(root) {
-      const installDir = path.join(Global.Path.bin, "cangjie-sdk")
-      const installedBin = path.join(installDir, "tools", "bin", "LSPServer")
-
-      let bin =
-        which("LSPServer", {
-          PATH: process.env["PATH"] + path.delimiter + path.join(installDir, "tools", "bin"),
-        }) ?? (process.platform === "win32" ? which("LSPServer.exe") : null)
-
+      const bin = which("LSPServer") ?? (process.platform === "win32" ? which("LSPServer.exe") : null)
       if (!bin) {
-        if (Flag.OPENCODE_DISABLE_LSP_DOWNLOAD) return
-
-        if (process.platform !== "linux" || process.arch !== "x64") {
-          log.info("Cangjie SDK auto-download is only supported on linux-x64")
-          return
-        }
-
-        log.info("downloading Cangjie SDK from GitHub releases")
-        const url =
-          "https://github.com/SunriseSummer/CangjieSDK/releases/download/1.0.5/cangjie-sdk-linux-x64-1.0.5.tar.gz"
-        const response = await fetch(url)
-        if (!response.ok || !response.body) {
-          log.error("Failed to download Cangjie SDK")
-          return
-        }
-
-        const archive = path.join(Global.Path.bin, "cangjie-sdk.tar.gz")
-        await Filesystem.writeStream(archive, response.body)
-
-        const stats = await fs.stat(installDir).catch(() => undefined)
-        if (stats) {
-          await fs.rm(installDir, { force: true, recursive: true })
-        }
-        await fs.mkdir(installDir, { recursive: true })
-
-        const ok = await $`tar -xzf ${archive} --strip-components=1 -C ${installDir}`
-          .quiet()
-          .then(() => true)
-          .catch((error) => {
-            log.error("Failed to extract Cangjie SDK archive", { error })
-            return false
-          })
-        if (!ok) return
-
-        await fs.rm(archive, { force: true })
-        await $`chmod +x ${installedBin}`.quiet().nothrow()
-        log.info("installed Cangjie SDK", { path: installDir })
-        bin = installedBin
-      }
-
-      if (!(await Filesystem.exists(bin))) {
-        log.error("LSPServer binary not found", { bin })
+        log.info("LSPServer not found, please install Cangjie SDK and source envsetup.sh first")
         return
       }
-
-      const sdk = cangjieSdkHome(bin)
       const proc = spawn(bin, ["--stdio"], {
         cwd: root,
-        env: cangjieEnv(sdk),
       })
       proc.on("error", (err) => {
         log.error("Failed to start Cangjie LSPServer", { error: err.message })

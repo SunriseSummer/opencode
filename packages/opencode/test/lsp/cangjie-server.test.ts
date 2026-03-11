@@ -6,10 +6,10 @@ import { LSPServer } from "../../src/lsp/server"
 import { Instance } from "../../src/project/instance"
 import { Log } from "../../src/util/log"
 
-function spawnFakeServer(...args: string[]) {
-  const serverPath = path.join(__dirname, "../fixture/lsp/fake-lsp-server-with-args.js")
+function spawnFakeServer() {
+  const serverPath = path.join(__dirname, "../fixture/lsp/fake-lsp-server.js")
   return {
-    process: spawn(process.execPath, [serverPath, ...args], {
+    process: spawn(process.execPath, [serverPath], {
       stdio: "pipe",
     }),
   }
@@ -27,7 +27,7 @@ describe("Cangjie LSP server", () => {
   })
 
   test("initializes over stdio", async () => {
-    const handle = spawnFakeServer("--stdio")
+    const handle = spawnFakeServer()
 
     const client = await Instance.provide({
       directory: process.cwd(),

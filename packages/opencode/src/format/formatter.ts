@@ -1,7 +1,5 @@
 import { text } from "node:stream/consumers"
-import path from "path"
 import { BunProc } from "../bun"
-import { Global } from "../global"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
 import { Process } from "../util/process"
@@ -28,20 +26,11 @@ export const gofmt: Info = {
 export const cjfmt: Info = {
   name: "cjfmt",
   get command() {
-    const sdkBin = path.join(Global.Path.bin, "cangjie-sdk", "tools", "bin")
-    const bin =
-      which("cjfmt", {
-        PATH: process.env["PATH"] + path.delimiter + sdkBin,
-      }) ?? (process.platform === "win32" ? which("cjfmt.exe") : null)
-    return [bin ?? "cjfmt", "-f", "$FILE"]
+    return ["cjfmt", "-f", "$FILE"]
   },
   extensions: [".cj"],
   async enabled() {
-    const sdkBin = path.join(Global.Path.bin, "cangjie-sdk", "tools", "bin")
-    const bin =
-      which("cjfmt", {
-        PATH: process.env["PATH"] + path.delimiter + sdkBin,
-      }) ?? (process.platform === "win32" ? which("cjfmt.exe") : null)
+    const bin = which("cjfmt") ?? (process.platform === "win32" ? which("cjfmt.exe") : null)
     return bin !== null
   },
 }

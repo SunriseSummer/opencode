@@ -5,6 +5,18 @@ export default {
   //       ALSO: Some queries use breaking changes in the nvim-treesitter repo, that are not compatible with the (web-)tree-sitter parser.
   parsers: [
     {
+      filetype: "cangjie",
+      wasm: "https://github.com/SunriseSummer/CangjieTreeSitter/releases/download/1.0.5.2/tree-sitter-cangjie.wasm",
+      queries: {
+        highlights: [
+          "https://github.com/SunriseSummer/CangjieTreeSitter/releases/download/1.0.5.2/highlights.scm"
+        ],
+        locals: [
+          "https://github.com/SunriseSummer/CangjieTreeSitter/releases/download/1.0.5.2/locals.scm"
+        ],
+      },
+    },
+    {
       filetype: "python",
       wasm: "https://github.com/tree-sitter/tree-sitter-python/releases/download/v0.23.6/tree-sitter-python.wasm",
       queries: {

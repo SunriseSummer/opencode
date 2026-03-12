@@ -1874,6 +1874,28 @@ export namespace LSPServer {
     },
   }
 
+  export const Cangjie: Info = {
+    id: "cangjie",
+    extensions: [".cj"],
+    root: NearestRoot(["cjpm.toml"]),
+    async spawn(root) {
+      const bin = which("LSPServer") ?? (process.platform === "win32" ? which("LSPServer.exe") : null)
+      if (!bin) {
+        log.info("LSPServer not found, please install CangjieSDK first")
+        return
+      }
+      const proc = spawn(bin, ["--stdio"], {
+        cwd: root,
+      })
+      proc.on("error", (err) => {
+        log.error("Failed to start Cangjie LSPServer", { error: err.message })
+      })
+      return {
+        process: proc,
+      }
+    },
+  }
+
   export const Clojure: Info = {
     id: "clojure-lsp",
     extensions: [".clj", ".cljs", ".cljc", ".edn"],

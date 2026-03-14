@@ -244,6 +244,7 @@ export namespace File {
     "ini",
     "cfg",
     "conf",
+    "cj",
     "env",
   ])
 

@@ -9,6 +9,7 @@ export const LANGUAGE_EXTENSIONS: Record<string, string> = {
   ".edn": "clojure",
   ".coffee": "coffeescript",
   ".c": "c",
+  ".cj": "cangjie",
   ".cpp": "cpp",
   ".cxx": "cpp",
   ".cc": "cpp",

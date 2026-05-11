@@ -242,6 +242,7 @@ const text = new Set([
   "sql",
   "ini",
   "cfg",
+  "cj",
   "conf",
   "env",
 ])

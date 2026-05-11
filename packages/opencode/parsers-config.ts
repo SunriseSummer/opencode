@@ -286,5 +286,17 @@ export default {
         ],
       },
     },
+    {
+      filetype: "cangjie",
+      wasm: "https://gitcode.com/Cangjie-SIG/tree-sitter-cangjie/releases/download/1.0.5.4/tree-sitter-cangjie.wasm",
+      queries: {
+        highlights: [
+          "https://gitcode.com/Cangjie-SIG/tree-sitter-cangjie/releases/download/1.0.5.4/highlights.scm"
+        ],
+        locals: [
+          "https://gitcode.com/Cangjie-SIG/tree-sitter-cangjie/releases/download/1.0.5.4/locals.scm"
+        ],
+      },
+    },
   ],
 }

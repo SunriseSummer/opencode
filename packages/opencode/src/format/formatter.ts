@@ -401,3 +401,15 @@ export const dfmt: Info = {
     return [match, "-i", "$FILE"]
   },
 }
+
+export const cjfmt: Info = {
+  name: "cjfmt",
+  get command() {
+    return ["cjfmt", "-f", "$FILE"]
+  },
+  extensions: [".cj"],
+  async enabled() {
+    const bin = which("cjfmt") ?? (process.platform === "win32" ? which("cjfmt.exe") : null)
+    return bin !== null
+  },
+}

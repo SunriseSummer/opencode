@@ -2062,3 +2062,21 @@ export const JuliaLS: Info = {
     }
   },
 }
+
+export const Cangjie: Info = {
+  id: "cangjie",
+  extensions: [".cj"],
+  root: NearestRoot(["cjpm.toml"]),
+  async spawn(root) {
+    const bin = which("LSPServer") ?? (process.platform === "win32" ? which("LSPServer.exe") : null)
+    if (!bin) {
+      log.info("LSPServer not found, please install CangjieSDK first")
+      return
+    }
+    return {
+      process: spawn(bin, ["--stdio"], {
+        cwd: root,
+      }),
+    }
+  },
+}
